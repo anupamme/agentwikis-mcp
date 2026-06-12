@@ -1,0 +1,16 @@
+{
+  "name": "agentwikis-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Agent Wikis (agentwikis.com) — maintained, agent-readable knowledge bases with calibrated search and provenance. Read-only, no API key.",
+  "type": "module",
+  "bin": { "agentwikis-mcp": "./index.js" },
+  "main": "index.js",
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/tonbistudio/agentwikis-mcp.git" },
+  "homepage": "https://agentwikis.com/for-agents",
+  "keywords": ["mcp", "model-context-protocol", "knowledge-base", "llms-txt", "agents", "documentation"],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
