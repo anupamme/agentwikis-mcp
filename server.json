@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.tonbistudio/agentwikis-mcp",
   "title": "Agent Wikis",
-  "description": "Maintained, agent-readable knowledge bases with calibrated search and provenance. No API key.",
-  "version": "0.1.0",
+  "description": "Maintained, agent-readable knowledge bases with calibrated search and provenance. Free without a key; an Agent Wikis Pro key adds the XL tier.",
+  "version": "0.2.0",
   "repository": {
     "url": "https://github.com/tonbistudio/agentwikis-mcp",
     "source": "github"
@@ -13,8 +13,10 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "agentwikis-mcp",
-      "version": "0.1.0",
-      "transport": { "type": "stdio" },
+      "version": "0.2.0",
+      "transport": {
+        "type": "stdio"
+      },
       "environmentVariables": [
         {
           "name": "AGENTWIKIS_URL",
@@ -22,6 +24,12 @@
           "isRequired": false,
           "isSecret": false,
           "default": "https://agentwikis.com"
+        },
+        {
+          "name": "AGENTWIKIS_API_KEY",
+          "description": "Agent Wikis Pro API key. When set, open_wiki, search, and read_document include the Pro (XL) tier; without it the server serves the free tier only.",
+          "isRequired": false,
+          "isSecret": true
         }
       ]
     }

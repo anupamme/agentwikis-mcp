@@ -1,6 +1,6 @@
 # agentwikis-mcp
 
-MCP server for [Agent Wikis](https://agentwikis.com) — maintained, agent-readable knowledge bases compiled from messy, fast-moving sources. Read-only, no API key, no account.
+MCP server for [Agent Wikis](https://agentwikis.com) — maintained, agent-readable knowledge bases compiled from messy, fast-moving sources. Read-only; no API key or account needed for the free tier, and an optional Pro key adds the XL tier.
 
 Four tools shaped for an agent's loop:
 
@@ -34,6 +34,38 @@ args = ["-y", "agentwikis-mcp"]
 ```json
 { "mcpServers": { "agentwikis": { "command": "npx", "args": ["-y", "agentwikis-mcp"] } } }
 ```
+
+## Pro (XL) access
+
+Wikis ship in two tiers: the free `wiki/` pages, and an **XL** tier of deeper
+per-item reference pages included with [Agent Wikis Pro](https://www.agentwikis.com/pro).
+
+Set `AGENTWIKIS_API_KEY` to your Pro key and all three read tools widen to cover it:
+
+```json
+{
+  "mcpServers": {
+    "agentwikis": {
+      "command": "npx",
+      "args": ["-y", "agentwikis-mcp"],
+      "env": { "AGENTWIKIS_API_KEY": "aw_..." }
+    }
+  }
+}
+```
+
+| | Without a key | With a Pro key |
+|---|---|---|
+| `open_wiki` | free pages; an `xl` field says how many Pro pages exist | free **+ XL** pages, XL marked `gated: true` |
+| `search` | free pages only; an `xl` field reports how many Pro pages were **not** searched | ranks across both tiers, `confident` calibrated over the full corpus |
+| `read_document` | `402` on an XL path | returns the XL page |
+
+Without a key, a `confident: true` search result means *"the best **free** page covers
+your terms"* — the `xl` field on the response tells you how much you didn't see.
+
+**Routing tip.** XL pages are per-item depth, not broader coverage. When a question
+names a specific plugin, hook, CLI surface, runtime, API, or deployment procedure,
+prefer the `gated: true` page over the general concept page.
 
 ## Self-hosted instances
 

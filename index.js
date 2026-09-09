@@ -2,9 +2,11 @@
 // agentwikis-mcp — public MCP server for Agent Wikis (https://agentwikis.com).
 // A thin stdio<->HTTP bridge over the site's /api endpoints, so agents get the
 // same payloads (formatting, provenance footers, calibrated `confident` flag)
-// as the self-hosted server. Read-only; no API key required.
+// as the self-hosted server. Read-only; no API key required for the free tier.
 //
 // Point at a different instance with AGENTWIKIS_URL (e.g. a self-hosted app).
+// Set AGENTWIKIS_API_KEY to an Agent Wikis Pro key to include the XL tier in
+// open_wiki, search, and read_document.
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -14,7 +16,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 const BASE = (process.env.AGENTWIKIS_URL || 'https://agentwikis.com').replace(/\/$/, '');
-const VERSION = '0.1.0';
+const API_KEY = (process.env.AGENTWIKIS_API_KEY || '').trim();
+const VERSION = '0.2.0';
 
 const server = new Server(
   { name: 'agentwikis', version: VERSION },
@@ -38,7 +41,14 @@ const TOOLS = [
       'Orient yourself in one wiki, in a single call: returns its metadata, '
       + '`scope` (coverage / not-covered / freshness), document count, the entry '
       + 'document, and a `map` of all documents (paths + titles, grouped by folder) so '
-      + 'you can pick what to read_document next. Use a slug from list_wikis.',
+      + 'you can pick what to read_document next. Use a slug from list_wikis.'
+      + (API_KEY
+        ? ' A Pro key is configured, so the map ALSO includes the XL tier, marked '
+          + '`gated: true`. XL pages are per-item reference depth — when the question '
+          + 'names a specific plugin, hook, CLI surface, runtime, API, or deployment '
+          + 'procedure, prefer the XL page over the general concept page.'
+        : ' Free tier: the map omits Pro (XL) pages. The response\'s `xl` field says how '
+          + 'many exist and where to list them; set AGENTWIKIS_API_KEY to include them.'),
     inputSchema: {
       type: 'object',
       properties: {
@@ -82,7 +92,14 @@ const TOOLS = [
       + 'terms each page covers. Searches one wiki if `wiki` is given, otherwise every '
       + 'active wiki. Each result has its wiki, path, matched terms, and a short snippet '
       + 'for orientation — then read_document the page to get the answer. Returns a '
-      + '`confident` flag: if false, the wiki(s) likely lack this — fall back to web search.',
+      + '`confident` flag: if false, the wiki(s) likely lack this — fall back to web search.'
+      + (API_KEY
+        ? ' A Pro key is configured, so results span the free AND XL tiers; XL hits are '
+          + 'marked `gated: true` and carry deeper per-item detail. `confident` is '
+          + 'calibrated over that full corpus.'
+        : ' Free tier only. When the response carries an `xl` field, Pro pages in scope '
+          + 'were NOT searched and `confident` describes the free tier alone — do not read '
+          + 'a confident hit as "this is the best the wiki has".'),
     inputSchema: {
       type: 'object',
       properties: {
@@ -109,13 +126,20 @@ function fail(message) {
 
 // GET a JSON endpoint. On non-200, surfaces the API's own `error` message (plus
 // any hints like available slugs or section anchors) so agents can self-correct.
+//
+// With AGENTWIKIS_API_KEY set, every request carries the Pro key. That widens
+// open_wiki's document map and the search index to the XL tier and lets
+// read_document return XL pages — without it those calls silently see the free
+// tier only, which reads as "the wiki doesn't cover this".
 async function api(pathname, params = {}) {
   const url = new URL(BASE + pathname);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
   }
+  const headers = { 'User-Agent': `agentwikis-mcp/${VERSION}` };
+  if (API_KEY) headers.Authorization = `Bearer ${API_KEY}`;
   const res = await fetch(url, {
-    headers: { 'User-Agent': `agentwikis-mcp/${VERSION}` },
+    headers,
     signal: AbortSignal.timeout(30_000),
   });
   let body = null;
@@ -124,6 +148,16 @@ async function api(pathname, params = {}) {
     const parts = [body?.error || `HTTP ${res.status} from ${url.pathname}`];
     if (body?.available) parts.push(`Available: ${body.available.join(', ')}.`);
     if (body?.sections) parts.push(`Available sections: ${body.sections.join(', ')}.`);
+    // 402 is the Pro gate. Distinguish "you sent no key" from "your key isn't
+    // entitled" — otherwise a subscriber with a typo'd env var sees the same
+    // message as an anonymous caller and has nothing to act on.
+    if (res.status === 402) {
+      parts.push(
+        API_KEY
+          ? 'A key WAS sent but is not entitled — check the subscription at /pro, or rotate the key.'
+          : 'No key was sent. Set AGENTWIKIS_API_KEY in this server\'s environment to read Pro (XL) pages.'
+      );
+    }
     throw new Error(parts.join(' '));
   }
   if (body === null) throw new Error(`Unexpected non-JSON response from ${url.pathname}`);
@@ -170,7 +204,10 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`Agent Wikis MCP bridge running on stdio (${BASE}).`);
+  console.error(
+    `Agent Wikis MCP bridge running on stdio (${BASE}) — `
+    + (API_KEY ? 'Pro key configured: XL tier included.' : 'free tier (set AGENTWIKIS_API_KEY for XL).')
+  );
 }
 
 main().catch((err) => {
