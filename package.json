@@ -1,9 +1,9 @@
 {
   "name": "agentwikis-mcp",
   "version": "0.2.0",
-  "description": "MCP server for Agent Wikis (agentwikis.com) — maintained, agent-readable knowledge bases with calibrated search and provenance. Read-only, no API key.",
+  "description": "MCP server for Agent Wikis (agentwikis.com) — maintained, agent-readable knowledge bases with calibrated search and provenance. Read-only; free without a key, and an Agent Wikis Pro key adds the XL tier.",
   "type": "module",
-  "bin": { "agentwikis-mcp": "./index.js" },
+  "bin": { "agentwikis-mcp": "index.js" },
   "main": "index.js",
   "engines": { "node": ">=18" },
   "license": "MIT",
