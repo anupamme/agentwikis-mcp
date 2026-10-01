@@ -16,8 +16,12 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 const BASE = (process.env.AGENTWIKIS_URL || 'https://agentwikis.com').replace(/\/$/, '');
-const API_KEY = (process.env.AGENTWIKIS_API_KEY || '').trim();
-const VERSION = '0.2.0';
+// An MCP client that maps env from a secret store (Hermes: `env: { KEY:
+// "${KEY}" }`) can pass an unset reference through as the literal placeholder.
+// Treat that as no key, so a free-tier user isn't told a key was sent.
+const RAW_KEY = (process.env.AGENTWIKIS_API_KEY || '').trim();
+const API_KEY = /^\$\{[^}]*\}$/.test(RAW_KEY) ? '' : RAW_KEY;
+const VERSION = '0.2.1';
 
 const server = new Server(
   { name: 'agentwikis', version: VERSION },

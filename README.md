@@ -54,6 +54,20 @@ Set `AGENTWIKIS_API_KEY` to your Pro key and all three read tools widen to cover
 }
 ```
 
+**Hermes Agent:** keep the key in your profile's `.env` and map it in
+`config.yaml`. Hermes passes a stdio server only its configured `env`, never
+the `.env` itself. If the variable is unset, the server falls back to the free
+tier.
+
+```yaml
+mcp_servers:
+  agentwikis:
+    command: npx
+    args: ["-y", "agentwikis-mcp"]
+    env:
+      AGENTWIKIS_API_KEY: "${AGENTWIKIS_API_KEY}"
+```
+
 | | Without a key | With a Pro key |
 |---|---|---|
 | `open_wiki` | free pages; an `xl` field says how many Pro pages exist | free **+ XL** pages, XL marked `gated: true` |
